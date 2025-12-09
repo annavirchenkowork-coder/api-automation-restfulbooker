@@ -39,4 +39,53 @@ public class BookingTests extends BaseTest {
         assertNotNull(bookingId, "bookingid should not be null");
         assertEquals("Netta", firstname, "Firstname in the response should match request");
     }
+
+    @Test
+    void createAndGetBooking_shouldReturnSameData() {
+        BookingApi bookingApi = new BookingApi(requestSpec);
+
+        // 1. Create booking
+        String requestBody = """
+                {
+                  "firstname" : "Netta",
+                  "lastname" : "QA",
+                  "totalprice" : 123,
+                  "depositpaid" : true,
+                  "bookingdates" : {
+                      "checkin" : "2025-01-01",
+                      "checkout" : "2025-01-05"
+                  },
+                  "additionalneeds" : "Breakfast"
+                }
+                """;
+
+        Response createResponse = bookingApi.createBooking(requestBody);
+
+        assertEquals(200, createResponse.statusCode(), "Create booking should return 200");
+
+        Integer bookingId = createResponse.path("bookingid");
+        assertNotNull(bookingId, "bookingid should not be null");
+
+        // 2. Get booking by id
+        Response getResponse = bookingApi.getBooking(bookingId);
+
+        assertEquals(200, getResponse.statusCode(), "Get booking should return 200");
+
+        // 3. Validate that the data matches
+        String actualFirstname = getResponse.path("firstname");
+        String actualLastname = getResponse.path("lastname");
+        int actualTotalPrice = getResponse.path("totalprice");
+        Boolean actualDepositPaid = getResponse.path("depositpaid");
+        String actualCheckin = getResponse.path("bookingdates.checkin");
+        String actualCheckout = getResponse.path("bookingdates.checkout");
+        String actualAdditionalNeeds = getResponse.path("additionalneeds");
+
+        assertEquals("Netta", actualFirstname);
+        assertEquals("QA", actualLastname);
+        assertEquals(123, actualTotalPrice);
+        assertEquals(true, actualDepositPaid);
+        assertEquals("2025-01-01", actualCheckin);
+        assertEquals("2025-01-05", actualCheckout);
+        assertEquals("Breakfast", actualAdditionalNeeds);
+    }
 }
