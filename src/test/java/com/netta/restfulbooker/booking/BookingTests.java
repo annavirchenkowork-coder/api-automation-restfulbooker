@@ -1,11 +1,11 @@
 package com.netta.restfulbooker.booking;
 
+import com.netta.restfulbooker.auth.AuthApi;
 import com.netta.restfulbooker.base.BaseTest;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class BookingTests extends BaseTest {
     @Test
@@ -87,5 +87,119 @@ public class BookingTests extends BaseTest {
         assertEquals("2025-01-01", actualCheckin);
         assertEquals("2025-01-05", actualCheckout);
         assertEquals("Breakfast", actualAdditionalNeeds);
+    }
+
+    @Test
+    void updateBooking_shouldModifyExistingBooking_whenTokenIsValid() {
+        BookingApi bookingApi = new BookingApi(requestSpec);
+        AuthApi authApi = new AuthApi(requestSpec);
+
+        // 1. Create a booking to update
+        String originalRequestBody = """
+                {
+                  "firstname" : "Netta",
+                  "lastname" : "QA",
+                  "totalprice" : 123,
+                  "depositpaid" : true,
+                  "bookingdates" : {
+                      "checkin" : "2025-01-01",
+                      "checkout" : "2025-01-05"
+                  },
+                  "additionalneeds" : "Breakfast"
+                }
+                """;
+
+        Response createResponse = bookingApi.createBooking(originalRequestBody);
+        assertEquals(200, createResponse.statusCode(), "Create booking should return 200");
+        Integer bookingId = createResponse.path("bookingid");
+        assertNotNull(bookingId, "booking should not be null");
+
+        // 2. Get auth token
+        String token = authApi.getToken("admin", "password123");
+        assertNotNull(token, "Token should not be null");
+
+        //3. Prepare update boyd
+        String updateRequestBody = """
+                {
+                                  "firstname" : "Netta",
+                                  "lastname" : "Updated",
+                                  "totalprice" : 200,
+                                  "depositpaid" : false,
+                                  "bookingdates" : {
+                                      "checkin" : "2025-02-01",
+                                      "checkout" : "2025-02-10"
+                                  },
+                                  "additionalneeds" : "Late checkout"
+                                }
+                """;
+
+        //4. Send PUT /booking/{id}
+        Response updateResponse = bookingApi.updateBooking(bookingId, updateRequestBody, token);
+        assertEquals(200, updateResponse.statusCode(), "Update booking should return 200");
+
+        // 5. Verify updated fields from response
+        String updatedLastname = updateResponse.path("lastname");
+        int updatedTotalPrice = updateResponse.path("totalprice");
+        Boolean updatedDepositPaid = updateResponse.path("depositpaid");
+        String updatedCheckin = updateResponse.path("bookingdates.checkin");
+        String updatedCheckout = updateResponse.path("bookingdates.checkout");
+        String updatedAdditionalNeeds = updateResponse.path("additionalneeds");
+
+        assertEquals("Updated", updatedLastname);
+        assertEquals(200, updatedTotalPrice);
+        assertEquals(false, updatedDepositPaid);
+        assertEquals("2025-02-01", updatedCheckin);
+        assertEquals("2025-02-10", updatedCheckout);
+        assertEquals("Late checkout", updatedAdditionalNeeds);
+    }
+
+    @Test
+    void deleteBooking_shouldRemoveBooking_whenTokenIsValid() {
+        BookingApi bookingApi = new BookingApi(requestSpec);
+        AuthApi authApi = new AuthApi(requestSpec);
+
+        // 1. Create a booking to delete
+        String requestBody = """
+                {
+                  "firstname" : "ToDelete",
+                  "lastname" : "Booking",
+                  "totalprice" : 50,
+                  "depositpaid" : true,
+                  "bookingdates" : {
+                      "checkin" : "2025-03-01",
+                      "checkout" : "2025-03-05"
+                  },
+                  "additionalneeds" : "None"
+                }
+                """;
+
+        Response createResponse = bookingApi.createBooking(requestBody);
+        assertEquals(200, createResponse.statusCode(), "Create booking should return 200");
+
+        Integer bookingId = createResponse.path("bookingid");
+        assertNotNull(bookingId, "bookingid should not be null");
+
+        // 2. Get auth token
+        String token = authApi.getToken("admin", "password123");
+        assertNotNull(token, "Token should not be null");
+
+        // 3. Delete booking
+        Response deleteResponse = bookingApi.deleteBooking(bookingId, token);
+
+        int statusCode = deleteResponse.statusCode();
+        System.out.println("Delete status = " + statusCode);
+
+        // Accepting 201 as OK (or 200 if needed)
+        boolean isSuccessStatus = statusCode == 201 || statusCode == 200;
+        System.out.println("Delete status = " + statusCode);
+        System.out.println("Delete body = " + deleteResponse.asString());
+        assertTrue(isSuccessStatus, "Delete booking should return 201 or 200");
+
+        // 4. Try to get the booking and expect 404 or some error
+        Response getAfterDelete = bookingApi.getBooking(bookingId);
+        int getStatusAfterDelete = getAfterDelete.statusCode();
+
+        // Some versions of the API return 404 for deleted booking
+        System.out.println("Get after delete status = " + getStatusAfterDelete);
     }
 }

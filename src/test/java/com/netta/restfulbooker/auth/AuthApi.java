@@ -30,4 +30,9 @@ public class AuthApi {
                 .extract()
                 .response();
     }
+
+    public String getToken(String username, String password) {
+        Response response = createToken(username, password);
+        return response.path("token");
+    }
 }

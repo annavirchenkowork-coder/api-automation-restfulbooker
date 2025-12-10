@@ -34,4 +34,26 @@ public class BookingApi {
                 .response();
     }
 
+    public Response updateBooking(int bookingId, String requestBody, String token) {
+        return given()
+                .spec(requestSpec)
+                .cookie("token", token)
+                .body(requestBody)
+                .when()
+                .put("/booking/" + bookingId)
+                .then()
+                .extract()
+                .response();
+    }
+
+    public Response deleteBooking(int bookingId, String token) {
+        return given()
+                .spec(requestSpec)
+                .cookie("token", token)
+                .when()
+                .delete("/booking/" + bookingId)
+                .then()
+                .extract()
+                .response();
+    }
 }
