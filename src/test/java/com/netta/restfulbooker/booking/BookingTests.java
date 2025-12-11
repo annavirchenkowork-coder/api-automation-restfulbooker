@@ -253,4 +253,39 @@ public class BookingTests extends BaseTest {
         // Expect Forbidden
         assertEquals(403, statusCode, "Update with invalid token should return 403 Forbidden");
     }
+
+    @Test
+    void deleteBooking_shouldReturn403_whenTokenIsMissing() {
+        BookingApi bookingApi = new BookingApi(requestSpec);
+
+        // 1. Create a booking to attempt to delete
+        String requestBody = """
+                {
+                  "firstname" : "NoToken",
+                  "lastname" : "Booking",
+                  "totalprice" : 50,
+                  "depositpaid" : true,
+                  "bookingdates" : {
+                      "checkin" : "2025-03-01",
+                      "checkout" : "2025-03-05"
+                  },
+                  "additionalneeds" : "None"
+                }
+                """;
+
+        Response createResponse = bookingApi.createBooking(requestBody);
+        assertEquals(200, createResponse.statusCode(), "Create booking should return 200");
+
+        Integer bookingId = createResponse.path("bookingid");
+        assertNotNull(bookingId, "bookingid should not be null");
+
+        // 2. Delete WITHOUT any auth
+        Response deleteResponse = bookingApi.deleteBookingWithoutAuth(bookingId);
+
+        int statusCode = deleteResponse.statusCode();
+        System.out.println("Delete without token status = " + statusCode);
+        System.out.println("Body = " + deleteResponse.asString());
+
+        assertEquals(403, statusCode, "Delete without token should return 403 Forbidden");
+    }
 }
