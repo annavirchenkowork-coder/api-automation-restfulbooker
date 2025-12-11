@@ -6,6 +6,7 @@ import io.restassured.response.Response;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInClasspath;
 
 public class BookingTests extends BaseTest {
     @Test
@@ -32,6 +33,9 @@ public class BookingTests extends BaseTest {
 
         // Basic assertions
         assertEquals(200, response.statusCode(), "Status code should be 200 for successful booking creation");
+
+        // Validate full JSON response structure
+        response.then().body(matchesJsonSchemaInClasspath("schemas/booking-create-schema.json"));
 
         Integer bookingId = response.path("bookingid");
         String firstname = response.path("booking.firstname");

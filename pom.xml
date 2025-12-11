@@ -40,6 +40,13 @@
             <version>${junit.jupiter.version}</version>
             <scope>test</scope>
         </dependency>
+        <!-- JSON Schema validation for RestAssured -->
+        <dependency>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>json-schema-validator</artifactId>
+            <version>5.5.6</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
