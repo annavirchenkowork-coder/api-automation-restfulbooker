@@ -288,4 +288,39 @@ public class BookingTests extends BaseTest {
 
         assertEquals(403, statusCode, "Delete without token should return 403 Forbidden");
     }
+
+    @Test
+    void createBooking_withInvalidTotalPriceType_setsTotalPriceToNull() {
+        BookingApi bookingApi = new BookingApi(requestSpec);
+
+        // Intentionally wrong type: totalprice is a string instead of a number
+        String badRequestBody = """
+                {
+                  "firstname" : "Bad",
+                  "lastname" : "Data",
+                  "totalprice" : "not-a-number",
+                  "depositpaid" : true,
+                  "bookingdates" : {
+                      "checkin" : "2025-01-01",
+                      "checkout" : "2025-01-05"
+                  },
+                  "additionalneeds" : "Breakfast"
+                }
+                """;
+
+        Response response = bookingApi.createBooking(badRequestBody);
+
+        int statusCode = response.statusCode();
+        System.out.println("Create with invalid totalprice status = " + statusCode);
+        System.out.println("Body = " + response.asString());
+
+        // API currently accepts invalid type and returns 200
+        assertEquals(200, statusCode,
+                "API currently returns 200 even when totalprice is not a valid number");
+
+        // totalprice is stored as null in the booking object
+        Integer totalPrice = response.path("booking.totalprice");
+        assertNull(totalPrice,
+                "When totalprice is sent as invalid type, API stores it as null");
+    }
 }
