@@ -56,4 +56,25 @@ public class BookingApi {
                 .extract()
                 .response();
     }
+
+    //For Negative tests:
+    public Response updateBookingWithoutAuth(int bookingId, String requestBody) {
+        return given()
+                .spec(requestSpec)
+                .body(requestBody)
+                .when()
+                .put("/booking/" + bookingId)
+                .then()
+                .extract()
+                .response();
+    }
+
+    public Response deleteBookingWithoutAuth(int bookingId) {
+        return given()
+                .spec(requestSpec)
+                .when()
+                .delete("/booking/" + bookingId)
+                .then()
+                .extract().response();
+    }
 }
