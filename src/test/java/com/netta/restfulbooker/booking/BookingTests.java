@@ -202,4 +202,55 @@ public class BookingTests extends BaseTest {
         // Some versions of the API return 404 for deleted booking
         System.out.println("Get after delete status = " + getStatusAfterDelete);
     }
+
+    @Test
+    void updateBooking_shouldReturn403_whenTokenIsInvalid() {
+        BookingApi bookingApi = new BookingApi(requestSpec);
+        // 1. Create a valid booking first
+        String requestBody = """
+                {
+                  "firstname" : "Netta",
+                  "lastname" : "QA",
+                  "totalprice" : 123,
+                  "depositpaid" : true,
+                  "bookingdates" : {
+                      "checkin" : "2025-01-01",
+                      "checkout" : "2025-01-05"
+                  },
+                  "additionalneeds" : "Breakfast"
+                }
+                """;
+
+        Response createResponse = bookingApi.createBooking(requestBody);
+        assertEquals(200, createResponse.statusCode(), "Create booking should return 200");
+
+        Integer bookingId = createResponse.path("bookingid");
+        assertNotNull(bookingId, "bookingid should not be null");
+
+        // 2. Build update body
+        String updateRequestBody = """
+                {
+                  "firstname" : "Netta",
+                  "lastname" : "ShouldFail",
+                  "totalprice" : 999,
+                  "depositpaid" : false,
+                  "bookingdates" : {
+                      "checkin" : "2025-04-01",
+                      "checkout" : "2025-04-10"
+                  },
+                  "additionalneeds" : "None"
+                }
+                """;
+
+        // 3. Use invalid token on purpose
+        String invalidToken = "thisIsNotARealToken";
+
+        Response updateResponse = bookingApi.updateBooking(bookingId, updateRequestBody, invalidToken);
+        int statusCode = updateResponse.statusCode();
+        System.out.println("Update with invalid token status = " + statusCode);
+        System.out.println("Body = " + updateResponse.asString());
+
+        // Expect Forbidden
+        assertEquals(403, statusCode, "Update with invalid token should return 403 Forbidden");
+    }
 }
